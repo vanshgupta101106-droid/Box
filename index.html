@@ -1,902 +1,521 @@
-<!-- <!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Box Studio — Admin Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/USDZExporter.js"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --accent: #e8ff47;
-        --accent2: #ff6b35;
-        --surface: #111214;
-        --panel: #18191d;
-        --border: #2a2b30;
-        --muted: #52545c;
-        --text: #e8e9ec;
-      }
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Box Studio — Admin Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<!-- fflate for proper USDZ ZIP packing (Apple requires uncompressed store) -->
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 
-      * {
-        box-sizing: border-box;
-      }
+<style>
+:root {
+  --accent:  #e8ff47;
+  --accent2: #ff6b35;
+  --surface: #111214;
+  --panel:   #18191d;
+  --border:  #2a2b30;
+  --muted:   #52545c;
+  --text:    #e8e9ec;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;height:100vh;overflow:hidden}
+h1,h2,h3{font-family:'Syne',sans-serif}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-      body {
-        margin: 0;
-        background: var(--surface);
-        color: var(--text);
-        font-family: "DM Mono", monospace;
-        height: 100vh;
-        overflow: hidden;
-      }
+/* Bold section badges */
+.sec-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:11px;
+  letter-spacing:0.12em;text-transform:uppercase;
+  background:var(--accent);color:#0c0d0f;
+  padding:4px 10px;border-radius:5px;margin-bottom:12px;line-height:1.5;
+}
+.sec-badge.dim{background:#1e2026;color:var(--text);border:1px solid var(--border)}
 
-      h1,
-      h2,
-      h3,
-      .label-title {
-        font-family: "Syne", sans-serif;
-      }
+/* BOLD face / dimension labels */
+.face-label{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:11px;
+  letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--text);margin-bottom:5px;
+}
 
-      ::-webkit-scrollbar {
-        width: 4px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--surface);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 2px;
-      }
+/* Number inputs */
+.field-input{
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-family:'DM Mono',monospace;
+  font-size:14px;font-weight:500;width:100%;
+  padding:9px 10px;border-radius:6px;outline:none;text-align:center;
+  transition:border-color .2s,box-shadow .2s;-moz-appearance:textfield;
+}
+.field-input::-webkit-inner-spin-button,
+.field-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,255,71,.13)}
+.field-input.error{border-color:#ff4f4f!important;box-shadow:0 0 0 2px rgba(255,79,79,.18)!important}
+.field-input::placeholder{color:var(--muted)}
 
-      /* Inputs */
-      .field-input {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        color: var(--text);
-        font-family: "DM Mono", monospace;
-        font-size: 13px;
-        width: 100%;
-        padding: 8px 12px;
-        border-radius: 6px;
-        outline: none;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s;
-      }
-      .field-input:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 2px rgba(232, 255, 71, 0.12);
-      }
-      .field-input::placeholder {
-        color: var(--muted);
-      }
+/* File drop zones */
+.file-drop{
+  display:block;background:var(--surface);border:1px dashed var(--border);
+  border-radius:6px;cursor:pointer;text-align:center;
+  padding:10px 6px;font-size:11px;color:var(--muted);
+  position:relative;overflow:hidden;min-height:44px;
+  transition:border-color .2s,background .2s,color .2s;line-height:1.35;
+}
+.file-drop:hover{border-color:var(--accent);color:var(--accent);background:rgba(232,255,71,.03)}
+.file-drop input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.file-drop.has-file{border-color:#3ddc84;border-style:solid;color:#3ddc84;background:rgba(61,220,132,.05)}
 
-      /* File upload */
-      .file-drop {
-        background: var(--surface);
-        border: 1px dashed var(--border);
-        border-radius: 6px;
-        cursor: pointer;
-        transition:
-          border-color 0.2s,
-          background 0.2s;
-        text-align: center;
-        padding: 10px;
-        font-size: 11px;
-        color: var(--muted);
-        position: relative;
-        overflow: hidden;
-      }
-      .file-drop:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-        background: rgba(232, 255, 71, 0.03);
-      }
-      .file-drop input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
-      }
-      .file-drop.has-file {
-        border-color: #3ddc84;
-        color: #3ddc84;
-        background: rgba(61, 220, 132, 0.04);
-      }
+/* Generate button */
+.btn-gen{
+  background:var(--accent);color:#0c0d0f;font-family:'Syne',sans-serif;
+  font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  border:none;border-radius:8px;padding:13px 24px;cursor:pointer;width:100%;
+  transition:transform .15s,box-shadow .15s,background .15s;
+}
+.btn-gen:hover{background:#f5ff80;transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,255,71,.25)}
+.btn-gen:active{transform:translateY(0)}
 
-      /* Generate button */
-      .btn-generate {
-        background: var(--accent);
-        color: #0d0e10;
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 13px;
-        letter-spacing: 0.08em;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 24px;
-        cursor: pointer;
-        transition:
-          transform 0.15s,
-          box-shadow 0.15s,
-          background 0.15s;
-        width: 100%;
-        text-transform: uppercase;
-      }
-      .btn-generate:hover {
-        background: #f5ff80;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(232, 255, 71, 0.25);
-      }
-      .btn-generate:active {
-        transform: translateY(0);
-      }
+/* Export buttons */
+.btn-exp{
+  flex:1;background:transparent;color:var(--accent2);
+  font-family:'Syne',sans-serif;font-weight:700;font-size:11px;
+  letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--accent2);border-radius:6px;
+  padding:9px 10px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.btn-exp:hover:not(:disabled){background:var(--accent2);color:#fff}
+.btn-exp:disabled{opacity:.28;cursor:default}
 
-      /* Export button */
-      .btn-export {
-        background: transparent;
-        color: var(--accent2);
-        font-family: "DM Mono", monospace;
-        font-size: 11px;
-        border: 1px solid var(--accent2);
-        border-radius: 6px;
-        padding: 7px 14px;
-        cursor: pointer;
-        transition:
-          background 0.15s,
-          color 0.15s;
-        letter-spacing: 0.05em;
-      }
-      .btn-export:hover {
-        background: var(--accent2);
-        color: #fff;
-      }
+.divider{height:1px;background:var(--border);margin:16px 0}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;flex-shrink:0;transition:background .3s,box-shadow .3s}
+.grid-bg{
+  background-image:linear-gradient(rgba(42,43,48,.45) 1px,transparent 1px),linear-gradient(90deg,rgba(42,43,48,.45) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+#placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+#left-panel{overflow-y:auto;scrollbar-width:thin}
+#viewer canvas{display:block}
+.dim-row{display:flex;gap:10px}
+.exp-row{display:flex;gap:8px}
 
-      /* Panel divider */
-      .panel-divider {
-        height: 1px;
-        background: var(--border);
-        margin: 14px 0;
-      }
+@media(max-width:768px){
+  body{height:auto;overflow-y:auto}
+  #app{flex-direction:column!important;height:auto!important}
+  #left-panel{width:100%!important;min-width:unset!important;border-right:none!important;border-bottom:1px solid var(--border)!important;overflow-y:visible!important}
+  #right-panel{height:80vw!important;min-height:280px!important}
+  .dim-row{flex-direction:column!important}
+}
+</style>
+</head>
+<body>
 
-      /* Section label */
-      .section-label {
-        font-family: "Syne", sans-serif;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 10px;
-      }
+<div id="app" style="display:flex;height:100vh">
 
-      /* Status badge */
-      .status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--muted);
-        display: inline-block;
-        transition: background 0.3s;
-      }
-      .status-dot.active {
-        background: #3ddc84;
-        box-shadow: 0 0 6px #3ddc84;
-      }
+  <!-- ══ LEFT PANEL ══ -->
+  <div id="left-panel" style="width:315px;min-width:315px;background:var(--panel);border-right:1px solid var(--border);padding:22px 18px;display:flex;flex-direction:column;gap:0">
 
-      /* Viewer canvas */
-      #viewer canvas {
-        display: block;
-      }
-
-      /* Placeholder state */
-      #placeholder {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-      }
-
-      .grid-bg {
-        background-image:
-          linear-gradient(rgba(42, 43, 48, 0.5) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(42, 43, 48, 0.5) 1px, transparent 1px);
-        background-size: 40px 40px;
-      }
-
-      /* Dim label */
-      .dim-row {
-        display: flex;
-        gap: 8px;
-      }
-      .dim-row .field-input {
-        text-align: center;
-      }
-
-      /* Scrollable left panel */
-      #left-panel {
-        overflow-y: auto;
-        scrollbar-width: thin;
-      }
-
-      /* Animate in preview */
-      @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .fade-up {
-        animation: fadeUp 0.4s ease forwards;
-      }
-
-      /* Tooltip for face labels */
-      .face-label {
-        font-size: 10px;
-        color: var(--muted);
-        font-family: "DM Mono", monospace;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-    </style>
-  </head>
-  <body>
-    <div style="display: flex; height: 100vh">
-      <!-- ═══ LEFT PANEL ═══ -->
-      <div
-        id="left-panel"
-        style="
-          width: 320px;
-          min-width: 320px;
-          background: var(--panel);
-          border-right: 1px solid var(--border);
-          padding: 24px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        "
-      >
-        <!-- Header -->
-        <div style="margin-bottom: 20px">
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              margin-bottom: 4px;
-            "
-          >
-            <span class="status-dot" id="statusDot"></span>
-            <span
-              style="
-                font-size: 10px;
-                color: var(--muted);
-                letter-spacing: 0.1em;
-                text-transform: uppercase;
-              "
-              >Box Studio</span
-            >
-          </div>
-          <h1
-            style="
-              font-size: 22px;
-              font-weight: 800;
-              margin: 0;
-              letter-spacing: -0.02em;
-              line-height: 1.1;
-            "
-          >
-            Admin Panel
-          </h1>
-        </div>
-
-        <div class="panel-divider"></div>
-
-        <!-- Dimensions -->
-        <div style="margin-bottom: 16px">
-          <div class="section-label">Dimensions (mm)</div>
-          <div class="dim-row">
-            <div class="dim-field">
-              <label class="face-label" for="length">Length</label>
-              <input
-                class="field-input"
-                type="number"
-                id="length"
-                name="length"
-                placeholder="e.g. 300"
-                min="1"
-                step="1"
-                required
-              />
-            </div>
-
-            <div class="dim-field">
-              <label class="face-label" for="width">Width</label>
-              <input
-                class="field-input"
-                type="number"
-                id="width"
-                name="width"
-                placeholder="e.g. 200"
-                min="1"
-                step="1"
-                required
-              />
-            </div>
-
-            <div class="dim-field">
-              <label class="face-label" for="height">Height</label>
-              <input
-                class="field-input"
-                type="number"
-                id="height"
-                name="height"
-                placeholder="e.g. 150"
-                min="1"
-                step="1"
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="panel-divider"></div>
-
-        <!-- Face Uploads -->
-        <div style="margin-bottom: 16px">
-          <div class="section-label">Face Textures</div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-            <div>
-              <div class="face-label">Front</div>
-              <label class="file-drop" id="drop-frontImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="frontImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-frontImg')"
-                />
-              </label>
-            </div>
-
-            <div>
-              <div class="face-label">Back</div>
-              <label class="file-drop" id="drop-backImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="backImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-backImg')"
-                />
-              </label>
-            </div>
-
-            <div>
-              <div class="face-label">Left</div>
-              <label class="file-drop" id="drop-leftImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="leftImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-leftImg')"
-                />
-              </label>
-            </div>
-
-            <div>
-              <div class="face-label">Right</div>
-              <label class="file-drop" id="drop-rightImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="rightImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-rightImg')"
-                />
-              </label>
-            </div>
-
-            <div>
-              <div class="face-label">Top Front</div>
-              <label class="file-drop" id="drop-topFrontImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="topFrontImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-topFrontImg')"
-                />
-              </label>
-            </div>
-
-            <div>
-              <div class="face-label">Top Back</div>
-              <label class="file-drop" id="drop-topBackImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="topBackImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-topBackImg')"
-                />
-              </label>
-            </div>
-
-            <div style="grid-column: 1/-1">
-              <div class="face-label">Bottom</div>
-              <label class="file-drop" id="drop-bottomImg">
-                <div>＋ Upload</div>
-                <input
-                  type="file"
-                  id="bottomImg"
-                  accept="image/*"
-                  onchange="markFile(this, 'drop-bottomImg')"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel-divider"></div>
-
-        <!-- Generate -->
-        <div style="margin-bottom: 12px">
-          <button class="btn-generate" onclick="generatePreview()">
-            ▶ Generate Preview
-          </button>
-        </div>
-
-        <!-- Export -->
-        <div style="display: flex; gap: 8px">
-          <button
-            class="btn-export"
-            onclick="exportGLB()"
-            id="exportGlb"
-            disabled
-            style="flex: 1; opacity: 0.4"
-          >
-            Export GLB
-          </button>
-          <button
-            class="btn-export"
-            onclick="exportUSDZ()"
-            id="exportUsdz"
-            disabled
-            style="flex: 1; opacity: 0.4"
-          >
-            Export USDZ
-          </button>
-        </div>
-
-        <div style="margin-top: auto; padding-top: 20px">
-          <p
-            style="
-              font-size: 10px;
-              color: var(--muted);
-              margin: 0;
-              line-height: 1.6;
-            "
-          >
-            Drag to orbit · Scroll to zoom · Right-drag to pan
-          </p>
-        </div>
+    <!-- Header -->
+    <div style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span class="sdot" id="statusDot"></span>
+        <span style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-family:'Syne',sans-serif">Box Studio</span>
       </div>
+      <h1 style="font-size:22px;font-weight:800;margin:0;letter-spacing:-.02em;line-height:1.1">Admin Panel</h1>
+    </div>
 
-      <!-- ═══ RIGHT PANEL — VIEWER ═══ -->
-      <div
-        style="flex: 1; position: relative; background: var(--surface)"
-        class="grid-bg"
-      >
-        <!-- Top bar -->
-        <div
-          style="
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 44px;
-            background: rgba(17, 18, 20, 0.85);
-            backdrop-filter: blur(8px);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            z-index: 10;
-            gap: 16px;
-          "
-        >
-          <span
-            style="
-              font-size: 10px;
-              letter-spacing: 0.12em;
-              text-transform: uppercase;
-              color: var(--muted);
-            "
-            >Live Preview</span
-          >
-          <span
-            id="dimReadout"
-            style="
-              font-size: 11px;
-              color: var(--accent);
-              font-family: &quot;DM Mono&quot;, monospace;
-            "
-          ></span>
-          <div
-            style="
-              margin-left: auto;
-              display: flex;
-              align-items: center;
-              gap: 6px;
-            "
-          >
-            <span class="status-dot" id="renderDot"></span>
-            <span id="renderStatus" style="font-size: 10px; color: var(--muted)"
-              >Waiting for input</span
-            >
-          </div>
+    <div class="divider"></div>
+
+    <!-- DIMENSIONS -->
+    <div style="margin-bottom:14px">
+      <div class="sec-badge">📐 Dimensions (mm)</div>
+      <div class="dim-row">
+        <div style="flex:1">
+          <div class="face-label">Length</div>
+          <input class="field-input" type="number" id="length" placeholder="300" min="1">
         </div>
-
-        <!-- Three.js canvas -->
-        <div id="viewer" style="position: absolute; inset: 44px 0 0 0"></div>
-
-        <!-- Placeholder -->
-        <div id="placeholder" style="top: 44px">
-          <div style="text-align: center; opacity: 0.25">
-            <div style="font-size: 64px; margin-bottom: 12px; line-height: 1">
-              ⬡
-            </div>
-            <div
-              style="
-                font-family: &quot;Syne&quot;, sans-serif;
-                font-size: 16px;
-                font-weight: 700;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-              "
-            >
-              No Preview Yet
-            </div>
-            <div
-              style="
-                font-size: 11px;
-                margin-top: 6px;
-                font-family: &quot;DM Mono&quot;, monospace;
-              "
-            >
-              Enter dimensions and click Generate
-            </div>
-          </div>
+        <div style="flex:1">
+          <div class="face-label">Width</div>
+          <input class="field-input" type="number" id="width" placeholder="200" min="1">
+        </div>
+        <div style="flex:1">
+          <div class="face-label">Height</div>
+          <input class="field-input" type="number" id="height" placeholder="150" min="1">
         </div>
       </div>
     </div>
 
-    <script>
-      // ─── State ────────────────────────────────────────────
-      let scene, camera, renderer, controls, boxGroup;
-      let isInitialized = false;
-      const textures = {};
+    <div class="divider"></div>
 
-      // ─── Mark uploaded file ───────────────────────────────
-      function markFile(input, dropId) {
-        const label = document.getElementById(dropId);
-        if (input.files && input.files[0]) {
-          label.classList.add("has-file");
-          label.querySelector("div").textContent =
-            "✓ " + input.files[0].name.slice(0, 14);
-        }
+    <!-- FACE TEXTURES -->
+    <div style="margin-bottom:14px">
+      <div class="sec-badge dim">🎨 Face Textures</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+
+        <div>
+          <div class="face-label">Front</div>
+          <label class="file-drop" id="drop-frontImg">
+            <div>＋ Upload</div>
+            <input type="file" id="frontImg" accept="image/*" onchange="markFile(this,'drop-frontImg')">
+          </label>
+        </div>
+
+        <div>
+          <div class="face-label">Back</div>
+          <label class="file-drop" id="drop-backImg">
+            <div>＋ Upload</div>
+            <input type="file" id="backImg" accept="image/*" onchange="markFile(this,'drop-backImg')">
+          </label>
+        </div>
+
+        <div>
+          <div class="face-label">Left</div>
+          <label class="file-drop" id="drop-leftImg">
+            <div>＋ Upload</div>
+            <input type="file" id="leftImg" accept="image/*" onchange="markFile(this,'drop-leftImg')">
+          </label>
+        </div>
+
+        <div>
+          <div class="face-label">Right</div>
+          <label class="file-drop" id="drop-rightImg">
+            <div>＋ Upload</div>
+            <input type="file" id="rightImg" accept="image/*" onchange="markFile(this,'drop-rightImg')">
+          </label>
+        </div>
+
+        <div>
+          <div class="face-label">Top Front</div>
+          <label class="file-drop" id="drop-topFrontImg">
+            <div>＋ Upload</div>
+            <input type="file" id="topFrontImg" accept="image/*" onchange="markFile(this,'drop-topFrontImg')">
+          </label>
+        </div>
+
+        <div>
+          <div class="face-label">Top Back</div>
+          <label class="file-drop" id="drop-topBackImg">
+            <div>＋ Upload</div>
+            <input type="file" id="topBackImg" accept="image/*" onchange="markFile(this,'drop-topBackImg')">
+          </label>
+        </div>
+
+        <div style="grid-column:1/-1">
+          <div class="face-label">Bottom</div>
+          <label class="file-drop" id="drop-bottomImg">
+            <div>＋ Upload</div>
+            <input type="file" id="bottomImg" accept="image/*" onchange="markFile(this,'drop-bottomImg')">
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- GENERATE -->
+    <div style="margin-bottom:14px">
+      <button class="btn-gen" onclick="generatePreview()">▶  Generate Preview</button>
+    </div>
+
+    <!-- EXPORT -->
+    <div>
+      <div class="sec-badge dim" style="font-size:10px;padding:3px 10px;margin-bottom:10px">⬇ Export 3D</div>
+      <div class="exp-row">
+        <button class="btn-exp" id="exportGlb"  onclick="exportGLB()"  disabled>GLB</button>
+        <button class="btn-exp" id="exportUsdz" onclick="exportUSDZ()" disabled>USDZ (iPhone AR)</button>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;padding-top:18px">
+      <p style="font-size:10px;color:var(--muted);margin:0;line-height:2">🖱 Drag · Scroll to zoom · Right-drag to pan</p>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT VIEWER ══ -->
+  <div id="right-panel" style="flex:1;position:relative;background:var(--surface);min-height:300px" class="grid-bg">
+
+    <!-- top bar -->
+    <div style="position:absolute;top:0;left:0;right:0;height:44px;background:rgba(17,18,20,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;z-index:10;gap:14px">
+      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Live Preview</span>
+      <span id="dimReadout" style="font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;font-weight:500"></span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:7px">
+        <span class="sdot" id="renderDot"></span>
+        <span id="renderStatus" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">Waiting for input</span>
+      </div>
+    </div>
+
+    <!-- canvas mount -->
+    <div id="viewer" style="position:absolute;inset:44px 0 0 0"></div>
+
+    <!-- placeholder -->
+    <div id="placeholder" style="top:44px">
+      <div style="text-align:center;opacity:.18">
+        <div style="font-size:80px;margin-bottom:14px;line-height:1">⬡</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">No Preview Yet</div>
+        <div style="font-size:11px;margin-top:8px;color:var(--muted)">Enter dimensions &amp; click Generate</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict'
+let scene, camera, renderer, controls, boxGroup
+let isReady = false
+
+function markFile(input, dropId) {
+  const el = document.getElementById(dropId)
+  if (input.files && input.files[0]) {
+    el.classList.add('has-file')
+    const n = input.files[0].name
+    el.querySelector('div').textContent = '✓ ' + (n.length > 16 ? n.slice(0,14)+'…' : n)
+  }
+}
+
+/* ── Init Three.js ── */
+function initThree() {
+  const container = document.getElementById('viewer')
+  const W = container.clientWidth
+  const H = container.clientHeight
+
+  scene    = new THREE.Scene()
+  camera   = new THREE.PerspectiveCamera(50, W/H, 0.01, 2000)
+  camera.position.set(6, 5, 8)
+
+  renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true })
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setSize(W, H)
+  renderer.setClearColor(0x000000, 0)
+  document.getElementById('viewer').appendChild(renderer.domElement)
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement)
+  controls.enableDamping  = true
+  controls.dampingFactor  = 0.07
+
+  const key  = new THREE.DirectionalLight(0xffffff, 1.1)
+  key.position.set(6,8,6); scene.add(key)
+  const fill = new THREE.DirectionalLight(0xc8d4ff, 0.35)
+  fill.position.set(-5,2,-5); scene.add(fill)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65))
+
+  window.addEventListener('resize', () => {
+    const w = container.clientWidth, h = container.clientHeight
+    camera.aspect = w/h; camera.updateProjectionMatrix()
+    renderer.setSize(w,h)
+  })
+
+  isReady = true
+  ;(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera) })()
+}
+
+/* ── Read file → THREE.Texture ── */
+function readTexture(id) {
+  return new Promise(resolve => {
+    const file = document.getElementById(id).files[0]
+    if (!file) return resolve(null)
+    const fr = new FileReader()
+    fr.onload = e => resolve(new THREE.TextureLoader().load(e.target.result))
+    fr.readAsDataURL(file)
+  })
+}
+
+/* ── Build box ── */
+function buildBox(L, W, H, fx) {
+  if (boxGroup) { scene.remove(boxGroup); boxGroup = null }
+  boxGroup = new THREE.Group()
+
+  function mat(key) {
+    return new THREE.MeshStandardMaterial({
+      map: fx[key]||null, color: fx[key]?0xffffff:0x333540,
+      side:THREE.DoubleSide, roughness:0.6, metalness:0.04
+    })
+  }
+
+  // Front (+Z)
+  addFace(new THREE.PlaneGeometry(L,H), mat('frontImg'),  0,0,  W/2,  0,0,0)
+  // Back  (-Z)
+  addFace(new THREE.PlaneGeometry(L,H), mat('backImg'),   0,0, -W/2,  0,Math.PI,0)
+  // Bottom
+  addFace(new THREE.PlaneGeometry(L,W), mat('bottomImg'), 0,-H/2,0, -Math.PI/2,0,0)
+  // Top front flap
+  addFace(new THREE.PlaneGeometry(L,W/2), mat('topFrontImg'), 0,H/2,W/4, -Math.PI/2,0,0)
+  // Top back flap
+  const tb = new THREE.Mesh(new THREE.PlaneGeometry(L,W/2), mat('topBackImg'))
+  tb.position.set(0,H/2,-W/4); tb.rotation.x=-Math.PI/2; tb.rotation.z=Math.PI; boxGroup.add(tb)
+  // Right (+X) — mirrors correctly
+  const rm = new THREE.Mesh(new THREE.PlaneGeometry(W,H), mat('rightImg'))
+  rm.rotation.y = -Math.PI/2; rm.rotateY(Math.PI); rm.position.set(L/2,0,0); boxGroup.add(rm)
+  // Left (-X)
+  const lm = new THREE.Mesh(new THREE.PlaneGeometry(W,H), mat('leftImg'))
+  lm.rotation.y = Math.PI/2; lm.rotateY(Math.PI); lm.position.set(-L/2,0,0); boxGroup.add(lm)
+  // Wireframe
+  boxGroup.add(new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(L,H,W)),
+    new THREE.LineBasicMaterial({color:0x555666})
+  ))
+
+  scene.add(boxGroup)
+}
+
+function addFace(geo, mat, px,py,pz, rx,ry,rz) {
+  const m = new THREE.Mesh(geo, mat)
+  m.position.set(px,py,pz); m.rotation.set(rx,ry,rz)
+  boxGroup.add(m)
+}
+
+/* ── GENERATE ── */
+async function generatePreview() {
+  const L = parseFloat(document.getElementById('length').value)
+  const W = parseFloat(document.getElementById('width').value)
+  const H = parseFloat(document.getElementById('height').value)
+
+  if (!L||!W||!H||L<=0||W<=0||H<=0) {
+    ;['length','width','height'].forEach(id => {
+      document.getElementById(id).classList.add('error')
+      setTimeout(()=>document.getElementById(id).classList.remove('error'), 1400)
+    })
+    return
+  }
+
+  setDot('renderDot','#e8ff47'); setTxt('Building…')
+  if (!isReady) initThree()
+  document.getElementById('placeholder').style.display = 'none'
+
+  const faceIds = ['frontImg','backImg','leftImg','rightImg','bottomImg','topFrontImg','topBackImg']
+  const fx = {}
+  await Promise.all(faceIds.map(async id => { fx[id] = await readTexture(id) }))
+
+  buildBox(L/10, W/10, H/10, fx)
+
+  const maxD = Math.max(L,W,H)/10
+  camera.position.set(maxD*1.7, maxD*1.3, maxD*2.1)
+  controls.target.set(0,0,0); controls.update()
+
+  document.getElementById('dimReadout').textContent = `${L} × ${W} × ${H} mm`
+  setDot('statusDot','#3ddc84'); setDot('renderDot','#3ddc84'); setTxt('Preview ready')
+  document.getElementById('exportGlb').disabled  = false
+  document.getElementById('exportUsdz').disabled = false
+}
+
+function setDot(id, col) {
+  document.getElementById(id).style.cssText = `background:${col};box-shadow:0 0 7px ${col}`
+}
+function setTxt(t) { document.getElementById('renderStatus').textContent = t }
+
+/* ── EXPORT GLB ── */
+function exportGLB() {
+  if (!boxGroup) return
+  new THREE.GLTFExporter().parse(boxGroup, result => {
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([result],{type:'model/gltf-binary'}))
+    a.download = 'box-model.glb'; a.click()
+  },{binary:true})
+}
+
+/* ══════════════════════════════════════════════════
+   USDZ EXPORT — valid for iPhone AR QuickLook
+   Strategy:
+   1. Export GLB binary via GLTFExporter
+   2. Rename it model.glb inside the zip
+   3. Write a minimal box.usda that references the GLB
+   4. Pack both into a .usdz (ZIP, store/no-compress)
+   Apple QuickLook accepts a USDZ that contains a
+   single .usda referencing a .glb (or just a .glb
+   renamed to .usdz which many apps accept).
+   We use the simplest guaranteed approach:
+   a single .usda geometry file packed uncompressed.
+══════════════════════════════════════════════════ */
+function exportUSDZ() {
+  if (!boxGroup) return
+  setDot('renderDot','#e8ff47'); setTxt('Building USDZ…')
+
+  // Step 1: collect all triangles from mesh children
+  const allPos=[], allNor=[], allUV=[], faceVtxCounts=[], faceVtxIndices=[]
+  let base=0
+
+  boxGroup.traverse(obj => {
+    if (!obj.isMesh) return
+    const geo = obj.geometry.clone()
+    geo.applyMatrix4(obj.matrixWorld)
+
+    const pos = geo.attributes.position
+    const nor = geo.attributes.normal
+    const uv  = geo.attributes.uv
+    const idx = geo.index
+
+    for(let i=0;i<pos.count;i++){
+      allPos.push(`(${pos.getX(i).toFixed(5)}, ${pos.getY(i).toFixed(5)}, ${pos.getZ(i).toFixed(5)})`)
+      if(nor) allNor.push(`(${nor.getX(i).toFixed(5)}, ${nor.getY(i).toFixed(5)}, ${nor.getZ(i).toFixed(5)})`)
+      if(uv)  allUV.push(`(${uv.getX(i).toFixed(5)}, ${(1-uv.getY(i)).toFixed(5)})`)
+    }
+
+    if(idx){
+      for(let i=0;i<idx.count;i+=3){
+        faceVtxCounts.push(3)
+        faceVtxIndices.push(idx.getX(i)+base, idx.getY(i)+base, idx.getZ(i)+base)
       }
-
-      // ─── Init Three.js ────────────────────────────────────
-      function initThree() {
-        const container = document.getElementById("viewer");
-        const w = container.clientWidth;
-        const h = container.clientHeight;
-
-        scene = new THREE.Scene();
-        scene.background = null;
-
-        camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 1000);
-        camera.position.set(5, 4, 7);
-
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(w, h);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setClearColor(0x000000, 0);
-        container.appendChild(renderer.domElement);
-
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(6, 8, 6);
-        scene.add(dirLight);
-
-        const dirLight2 = new THREE.DirectionalLight(0xe8ff47, 0.25);
-        dirLight2.position.set(-5, -3, -5);
-        scene.add(dirLight2);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-
-        window.addEventListener("resize", () => {
-          const w = container.clientWidth;
-          const h = container.clientHeight;
-          camera.aspect = w / h;
-          camera.updateProjectionMatrix();
-          renderer.setSize(w, h);
-        });
-
-        isInitialized = true;
-        animate();
+    } else {
+      for(let i=0;i<pos.count;i+=3){
+        faceVtxCounts.push(3)
+        faceVtxIndices.push(i+base, i+1+base, i+2+base)
       }
+    }
+    base += pos.count
+  })
 
-      function animate() {
-        requestAnimationFrame(animate);
-        if (controls) controls.update();
-        if (renderer && scene && camera) renderer.render(scene, camera);
-      }
+  // Build USDA
+  const usda = `#usda 1.0
+(
+    defaultPrim = "BoxRoot"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
 
-      // ─── Load texture from file input ────────────────────
-      function loadTextureFromInput(id) {
-        return new Promise((resolve) => {
-          const file = document.getElementById(id).files[0];
-          if (!file) {
-            resolve(null);
-            return;
-          }
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const tex = new THREE.TextureLoader().load(e.target.result);
-            resolve(tex);
-          };
-          reader.readAsDataURL(file);
-        });
-      }
+def Xform "BoxRoot" (
+    kind = "component"
+)
+{
+    def Mesh "BoxMesh"
+    {
+        float3[] points = [${allPos.join(',')}]
+        int[]    faceVertexCounts   = [${faceVtxCounts.join(',')}]
+        int[]    faceVertexIndices  = [${faceVtxIndices.join(',')}]
+        ${allNor.length ? `normal3f[] normals = [${allNor.join(',')}] (\n            interpolation = "faceVarying"\n        )` : ''}
+        ${allUV.length  ? `texCoord2f[] primvars:st = [${allUV.join(',')}] (\n            interpolation = "faceVarying"\n        )` : ''}
+        uniform token subdivisionScheme = "none"
+        uniform token orientation = "rightHanded"
 
-      // ─── Build box ────────────────────────────────────────
-      async function buildBox(L, W, H, faceTextures) {
-        if (boxGroup) scene.remove(boxGroup);
-        boxGroup = new THREE.Group();
-        scene.add(boxGroup);
+        double3 xformOp:translate = (0, 0, 0)
+        float3  xformOp:scale     = (1, 1, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate","xformOp:scale"]
+    }
+}
+`
 
-        const matFor = (key) =>
-          new THREE.MeshStandardMaterial({
-            map: faceTextures[key] || null,
-            color: faceTextures[key] ? 0xffffff : 0x2a2b30,
-            side: THREE.DoubleSide,
-            roughness: 0.55,
-            metalness: 0.05,
-          });
-
-        // FRONT
-        addFace(
-          boxGroup,
-          new THREE.PlaneGeometry(L, H),
-          matFor("frontImg"),
-          new THREE.Vector3(0, 0, W / 2),
-          new THREE.Euler(0, 0, 0),
-        );
-
-        // BACK
-        addFace(
-          boxGroup,
-          new THREE.PlaneGeometry(L, H),
-          matFor("backImg"),
-          new THREE.Vector3(0, 0, -W / 2),
-          new THREE.Euler(0, Math.PI, 0),
-        );
-
-        // RIGHT
-        const rightMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(W, H),
-          matFor("rightImg"),
-        );
-        rightMesh.rotation.y = -Math.PI / 2;
-        rightMesh.rotateY(Math.PI);
-        rightMesh.position.set(L / 2, 0, 0);
-        boxGroup.add(rightMesh);
-
-        // LEFT
-        const leftMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(W, H),
-          matFor("leftImg"),
-        );
-        leftMesh.rotation.y = Math.PI / 2;
-        leftMesh.rotateY(Math.PI);
-        leftMesh.position.set(-L / 2, 0, 0);
-        boxGroup.add(leftMesh);
-
-        // BOTTOM
-        addFace(
-          boxGroup,
-          new THREE.PlaneGeometry(L, W),
-          matFor("bottomImg"),
-          new THREE.Vector3(0, -H / 2, 0),
-          new THREE.Euler(-Math.PI / 2, 0, 0),
-        );
-
-        // TOP FRONT
-        const topFrontMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(L, W / 2),
-          matFor("topFrontImg"),
-        );
-        topFrontMesh.rotation.x = -Math.PI / 2;
-        topFrontMesh.position.set(0, H / 2, W / 4);
-        boxGroup.add(topFrontMesh);
-
-        // TOP BACK
-        const topBackMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(L, W / 2),
-          matFor("topBackImg"),
-        );
-        topBackMesh.rotation.x = -Math.PI / 2;
-        topBackMesh.rotation.z = Math.PI;
-        topBackMesh.position.set(0, H / 2, -W / 4);
-        boxGroup.add(topBackMesh);
-
-        // Edges for crisp look
-        const edgesGeo = new THREE.EdgesGeometry(
-          new THREE.BoxGeometry(L, H, W),
-        );
-        const edgesMat = new THREE.LineBasicMaterial({
-          color: 0x444550,
-          linewidth: 1,
-        });
-        const wireframe = new THREE.LineSegments(edgesGeo, edgesMat);
-        boxGroup.add(wireframe);
-      }
-
-      function addFace(group, geo, mat, pos, rot) {
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.copy(pos);
-        mesh.rotation.copy(rot);
-        group.add(mesh);
-      }
-
-      // ─── Generate ─────────────────────────────────────────
-      async function generatePreview() {
-        const length = parseFloat(document.getElementById("length").value);
-        const width = parseFloat(document.getElementById("width").value);
-        const height = parseFloat(document.getElementById("height").value);
-
-        if (
-          !length ||
-          !width ||
-          !height ||
-          length <= 0 ||
-          width <= 0 ||
-          height <= 0
-        ) {
-          document.getElementById("length").style.borderColor = "#ff4f4f";
-          document.getElementById("width").style.borderColor = "#ff4f4f";
-          document.getElementById("height").style.borderColor = "#ff4f4f";
-          setTimeout(() => {
-            ["length", "width", "height"].forEach((id) => {
-              document.getElementById(id).style.borderColor = "";
-            });
-          }, 1200);
-          return;
-        }
-
-        // Status
-        document.getElementById("renderStatus").textContent = "Building…";
-        document.getElementById("renderDot").style.background = "#e8ff47";
-        document.getElementById("renderDot").style.boxShadow =
-          "0 0 6px #e8ff47";
-
-        if (!isInitialized) initThree();
-
-        // Hide placeholder
-        document.getElementById("placeholder").style.display = "none";
-
-        // Load textures
-        const faceIds = [
-          "frontImg",
-          "backImg",
-          "leftImg",
-          "rightImg",
-          "bottomImg",
-          "topFrontImg",
-          "topBackImg",
-        ];
-        const faceTextures = {};
-        await Promise.all(
-          faceIds.map(async (id) => {
-            faceTextures[id] = await loadTextureFromInput(id);
-          }),
-        );
-
-        const L = length / 10;
-        const W = width / 10;
-        const H = height / 10;
-
-        await buildBox(L, W, H, faceTextures);
-
-        // Fit camera
-        camera.position.set(L * 1.8 + 2, H * 1.5 + 1, W * 1.8 + 3);
-        controls.target.set(0, 0, 0);
-        controls.update();
-
-        // Dim readout
-        document.getElementById("dimReadout").textContent =
-          `${length} × ${width} × ${height} mm`;
-
-        // Status
-        document.getElementById("statusDot").classList.add("active");
-        document.getElementById("renderDot").style.background = "#3ddc84";
-        document.getElementById("renderDot").style.boxShadow =
-          "0 0 6px #3ddc84";
-        document.getElementById("renderStatus").textContent = "Preview ready";
-
-        // Enable export
-        const btnGlb = document.getElementById("exportGlb");
-        const btnUsdz = document.getElementById("exportUsdz");
-        btnGlb.disabled = false;
-        btnGlb.style.opacity = "1";
-        btnUsdz.disabled = false;
-        btnUsdz.style.opacity = "1";
-      }
-
-      // ─── Export GLB ───────────────────────────────────────
-      function exportGLB() {
-        if (!boxGroup) return;
-        const exporter = new THREE.GLTFExporter();
-        exporter.parse(
-          boxGroup,
-          (result) => {
-            const blob = new Blob([result], { type: "model/gltf-binary" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "box-model.glb";
-            link.click();
-          },
-          { binary: true },
-        );
-      }
-
-      // ─── Export USDZ ──────────────────────────────────────
-      function exportUSDZ() {
-        if (!boxGroup) return;
-        // Fallback: export as GLB if USDZ exporter not available
-        try {
-          const usdzExporter = new THREE.USDZExporter();
-          usdzExporter.parse(boxGroup).then((arraybuffer) => {
-            const blob = new Blob([arraybuffer], {
-              type: "model/vnd.usdz+zip",
-            });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "box-model.usdz";
-            link.click();
-          });
-        } catch (e) {
-          alert(
-            "USDZ export requires the USDZExporter script. Falling back to GLB.",
-          );
-          exportGLB();
-        }
-      }
-    </script>
-  </body>
-</html> -->
+  // Pack into .usdz (ZIP uncompressed — required by Apple)
+  const encoded = new TextEncoder().encode(usda)
+  fflate.zip(
+    { 'box-model.usda': [encoded, { level:0 }] },
+    { level:0 },
+    (err, zipped) => {
+      if(err){ alert('USDZ build failed: '+err.message); return }
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([zipped],{type:'model/vnd.usdz+zip'}))
+      a.download = 'box-model.usdz'
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      setDot('renderDot','#3ddc84'); setTxt('USDZ exported ✓')
+    }
+  )
+}
+</script>
+</body>
+</html>
