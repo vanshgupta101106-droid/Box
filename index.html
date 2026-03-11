@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Box Studio — Admin Panel</title>
-<script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
-<!-- fflate for proper USDZ ZIP packing (Apple requires uncompressed store) -->
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 
 <style>
@@ -22,142 +20,191 @@
   --muted:   #52545c;
   --text:    #e8e9ec;
 }
-*{box-sizing:border-box}
-body{margin:0;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;height:100vh;overflow:hidden}
-h1,h2,h3{font-family:'Syne',sans-serif}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:var(--surface)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-
-/* Bold section badges */
-.sec-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  font-family:'Syne',sans-serif;font-weight:800;font-size:11px;
-  letter-spacing:0.12em;text-transform:uppercase;
-  background:var(--accent);color:#0c0d0f;
-  padding:4px 10px;border-radius:5px;margin-bottom:12px;line-height:1.5;
-}
-.sec-badge.dim{background:#1e2026;color:var(--text);border:1px solid var(--border)}
-
-/* BOLD face / dimension labels */
-.face-label{
-  font-family:'Syne',sans-serif;font-weight:800;font-size:11px;
-  letter-spacing:0.08em;text-transform:uppercase;
-  color:var(--text);margin-bottom:5px;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* Number inputs */
-.field-input{
-  background:var(--surface);border:1px solid var(--border);
-  color:var(--text);font-family:'DM Mono',monospace;
-  font-size:14px;font-weight:500;width:100%;
-  padding:9px 10px;border-radius:6px;outline:none;text-align:center;
-  transition:border-color .2s,box-shadow .2s;-moz-appearance:textfield;
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* section badge */
+.sec-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  background: var(--accent); color: #0c0d0f;
+  padding: 4px 10px; border-radius: 5px; margin-bottom: 12px; line-height: 1.5;
+}
+.sec-badge.dim { background: #1e2026; color: var(--text); border: 1px solid var(--border); }
+
+/* bold labels */
+.face-label {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text); margin-bottom: 5px;
+}
+
+/* number inputs */
+.field-input {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: 14px; font-weight: 500; width: 100%;
+  padding: 9px 10px; border-radius: 6px; outline: none; text-align: center;
+  transition: border-color .2s, box-shadow .2s; -moz-appearance: textfield;
 }
 .field-input::-webkit-inner-spin-button,
-.field-input::-webkit-outer-spin-button{-webkit-appearance:none}
-.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,255,71,.13)}
-.field-input.error{border-color:#ff4f4f!important;box-shadow:0 0 0 2px rgba(255,79,79,.18)!important}
-.field-input::placeholder{color:var(--muted)}
+.field-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(232,255,71,.13); }
+.field-input.error { border-color: #ff4f4f !important; box-shadow: 0 0 0 2px rgba(255,79,79,.18) !important; }
+.field-input::placeholder { color: var(--muted); }
 
-/* File drop zones */
-.file-drop{
-  display:block;background:var(--surface);border:1px dashed var(--border);
-  border-radius:6px;cursor:pointer;text-align:center;
-  padding:10px 6px;font-size:11px;color:var(--muted);
-  position:relative;overflow:hidden;min-height:44px;
-  transition:border-color .2s,background .2s,color .2s;line-height:1.35;
+/* ── Unit toggle pills ── */
+.unit-toggle {
+  display: flex; gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px;
 }
-.file-drop:hover{border-color:var(--accent);color:var(--accent);background:rgba(232,255,71,.03)}
-.file-drop input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.file-drop.has-file{border-color:#3ddc84;border-style:solid;color:#3ddc84;background:rgba(61,220,132,.05)}
+.unit-pill {
+  flex: 1; text-align: center;
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 6px 4px; border-radius: 5px; cursor: pointer; border: none;
+  background: transparent; color: var(--muted);
+  transition: background .18s, color .18s, box-shadow .18s;
+}
+.unit-pill.active {
+  background: var(--accent); color: #0c0d0f;
+  box-shadow: 0 2px 8px rgba(232,255,71,.25);
+}
+.unit-pill:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.05); }
 
-/* Generate button */
-.btn-gen{
-  background:var(--accent);color:#0c0d0f;font-family:'Syne',sans-serif;
-  font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;
-  border:none;border-radius:8px;padding:13px 24px;cursor:pointer;width:100%;
-  transition:transform .15s,box-shadow .15s,background .15s;
+/* file drop */
+.file-drop {
+  display: block; background: var(--surface);
+  border: 1px dashed var(--border); border-radius: 6px;
+  cursor: pointer; text-align: center; padding: 10px 6px;
+  font-size: 11px; color: var(--muted);
+  position: relative; overflow: hidden; min-height: 44px;
+  transition: border-color .2s, background .2s, color .2s; line-height: 1.35;
 }
-.btn-gen:hover{background:#f5ff80;transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,255,71,.25)}
-.btn-gen:active{transform:translateY(0)}
+.file-drop:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,255,71,.03); }
+.file-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.file-drop.has-file { border-color: #3ddc84; border-style: solid; color: #3ddc84; background: rgba(61,220,132,.05); }
 
-/* Export buttons */
-.btn-exp{
-  flex:1;background:transparent;color:var(--accent2);
-  font-family:'Syne',sans-serif;font-weight:700;font-size:11px;
-  letter-spacing:.06em;text-transform:uppercase;
-  border:1px solid var(--accent2);border-radius:6px;
-  padding:9px 10px;cursor:pointer;
-  transition:background .15s,color .15s;
+/* generate */
+.btn-gen {
+  background: var(--accent); color: #0c0d0f;
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+  border: none; border-radius: 8px; padding: 13px 24px;
+  cursor: pointer; width: 100%;
+  transition: transform .15s, box-shadow .15s, background .15s;
 }
-.btn-exp:hover:not(:disabled){background:var(--accent2);color:#fff}
-.btn-exp:disabled{opacity:.28;cursor:default}
+.btn-gen:hover { background: #f5ff80; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232,255,71,.25); }
+.btn-gen:active { transform: translateY(0); }
 
-.divider{height:1px;background:var(--border);margin:16px 0}
-.sdot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;flex-shrink:0;transition:background .3s,box-shadow .3s}
-.grid-bg{
-  background-image:linear-gradient(rgba(42,43,48,.45) 1px,transparent 1px),linear-gradient(90deg,rgba(42,43,48,.45) 1px,transparent 1px);
-  background-size:40px 40px;
+/* export */
+.btn-exp {
+  flex: 1; background: transparent; color: var(--accent2);
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  border: 1px solid var(--accent2); border-radius: 6px;
+  padding: 9px 10px; cursor: pointer;
+  transition: background .15s, color .15s;
 }
-#placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-#left-panel{overflow-y:auto;scrollbar-width:thin}
-#viewer canvas{display:block}
-.dim-row{display:flex;gap:10px}
-.exp-row{display:flex;gap:8px}
+.btn-exp:hover:not(:disabled) { background: var(--accent2); color: #fff; }
+.btn-exp:disabled { opacity: .28; cursor: default; }
 
-@media(max-width:768px){
-  body{height:auto;overflow-y:auto}
-  #app{flex-direction:column!important;height:auto!important}
-  #left-panel{width:100%!important;min-width:unset!important;border-right:none!important;border-bottom:1px solid var(--border)!important;overflow-y:visible!important}
-  #right-panel{height:80vw!important;min-height:280px!important}
-  .dim-row{flex-direction:column!important}
+/* layout helpers */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.sdot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted); display: inline-block; flex-shrink: 0;
+  transition: background .3s, box-shadow .3s;
 }
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(42,43,48,.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42,43,48,.45) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+#placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+#left-panel { overflow-y: auto; scrollbar-width: thin; }
+#viewer canvas { display: block; }
+.dim-row { display: flex; gap: 10px; }
+.exp-row { display: flex; gap: 8px; }
 </style>
 </head>
 <body>
 
-<div id="app" style="display:flex;height:100vh">
+<div id="app" style="display:flex;height:100vh;">
 
-  <!-- ══ LEFT PANEL ══ -->
-  <div id="left-panel" style="width:315px;min-width:315px;background:var(--panel);border-right:1px solid var(--border);padding:22px 18px;display:flex;flex-direction:column;gap:0">
+  <!-- ══════════ LEFT PANEL ══════════ -->
+  <div id="left-panel" style="width:320px;min-width:320px;background:var(--panel);border-right:1px solid var(--border);padding:22px 18px;display:flex;flex-direction:column;gap:0;">
 
     <!-- Header -->
-    <div style="margin-bottom:18px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+    <div style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
         <span class="sdot" id="statusDot"></span>
-        <span style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-family:'Syne',sans-serif">Box Studio</span>
+        <span style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-family:'Syne',sans-serif;">Box Studio</span>
       </div>
-      <h1 style="font-size:22px;font-weight:800;margin:0;letter-spacing:-.02em;line-height:1.1">Admin Panel</h1>
+      <h1 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1;">Admin Panel</h1>
     </div>
 
     <div class="divider"></div>
 
-    <!-- DIMENSIONS -->
-    <div style="margin-bottom:14px">
-      <div class="sec-badge">📐 Dimensions (mm)</div>
+    <!-- ── DIMENSIONS ── -->
+    <div style="margin-bottom:14px;">
+
+      <!-- badge + unit toggle in same row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="sec-badge" style="margin-bottom:0;">📐 Dimensions</div>
+        <!-- Unit selector pills -->
+        <div class="unit-toggle" id="unitToggle">
+          <button class="unit-pill active" data-unit="mm" onclick="selectUnit('mm')">mm</button>
+          <button class="unit-pill"        data-unit="cm" onclick="selectUnit('cm')">cm</button>
+          <button class="unit-pill"        data-unit="in" onclick="selectUnit('in')">inch</button>
+        </div>
+      </div>
+
       <div class="dim-row">
-        <div style="flex:1">
+        <div style="flex:1;">
           <div class="face-label">Length</div>
-          <input class="field-input" type="number" id="length" placeholder="300" min="1">
+          <input class="field-input" type="number" id="length" placeholder="300" min="0.01" step="any">
         </div>
-        <div style="flex:1">
+        <div style="flex:1;">
           <div class="face-label">Width</div>
-          <input class="field-input" type="number" id="width" placeholder="200" min="1">
+          <input class="field-input" type="number" id="width"  placeholder="200" min="0.01" step="any">
         </div>
-        <div style="flex:1">
+        <div style="flex:1;">
           <div class="face-label">Height</div>
-          <input class="field-input" type="number" id="height" placeholder="150" min="1">
+          <input class="field-input" type="number" id="height" placeholder="150" min="0.01" step="any">
         </div>
       </div>
+
+      <!-- Live conversion hint -->
+      <div id="convHint" style="font-size:10px;color:var(--muted);margin-top:7px;line-height:1.7;font-family:'DM Mono',monospace;min-height:16px;"></div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- FACE TEXTURES -->
-    <div style="margin-bottom:14px">
+    <!-- ── FACE TEXTURES ── -->
+    <div style="margin-bottom:14px;">
       <div class="sec-badge dim">🎨 Face Textures</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
 
         <div>
           <div class="face-label">Front</div>
@@ -207,7 +254,7 @@ h1,h2,h3{font-family:'Syne',sans-serif}
           </label>
         </div>
 
-        <div style="grid-column:1/-1">
+        <div style="grid-column:1/-1;">
           <div class="face-label">Bottom</div>
           <label class="file-drop" id="drop-bottomImg">
             <div>＋ Upload</div>
@@ -220,55 +267,113 @@ h1,h2,h3{font-family:'Syne',sans-serif}
 
     <div class="divider"></div>
 
-    <!-- GENERATE -->
-    <div style="margin-bottom:14px">
-      <button class="btn-gen" onclick="generatePreview()">▶  Generate Preview</button>
+    <!-- ── GENERATE ── -->
+    <div style="margin-bottom:14px;">
+      <button class="btn-gen" onclick="generatePreview()">▶ &nbsp;Generate Preview</button>
     </div>
 
-    <!-- EXPORT -->
+    <!-- ── EXPORT ── -->
     <div>
-      <div class="sec-badge dim" style="font-size:10px;padding:3px 10px;margin-bottom:10px">⬇ Export 3D</div>
+      <div class="sec-badge dim" style="font-size:10px;padding:3px 10px;margin-bottom:10px;">⬇ Export 3D</div>
       <div class="exp-row">
         <button class="btn-exp" id="exportGlb"  onclick="exportGLB()"  disabled>GLB</button>
         <button class="btn-exp" id="exportUsdz" onclick="exportUSDZ()" disabled>USDZ (iPhone AR)</button>
       </div>
     </div>
 
-    <div style="margin-top:auto;padding-top:18px">
-      <p style="font-size:10px;color:var(--muted);margin:0;line-height:2">🖱 Drag · Scroll to zoom · Right-drag to pan</p>
+    <!-- Footer hint -->
+    <div style="margin-top:auto;padding-top:18px;">
+      <p style="font-size:10px;color:var(--muted);line-height:2;">🖱 Drag · Scroll to zoom · Right-drag to pan</p>
     </div>
-  </div>
 
-  <!-- ══ RIGHT VIEWER ══ -->
-  <div id="right-panel" style="flex:1;position:relative;background:var(--surface);min-height:300px" class="grid-bg">
+  </div><!-- /left-panel -->
+
+  <!-- ══════════ RIGHT VIEWER ══════════ -->
+  <div id="right-panel" style="flex:1;position:relative;background:var(--surface);min-height:300px;" class="grid-bg">
 
     <!-- top bar -->
-    <div style="position:absolute;top:0;left:0;right:0;height:44px;background:rgba(17,18,20,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;z-index:10;gap:14px">
-      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Live Preview</span>
-      <span id="dimReadout" style="font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;font-weight:500"></span>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:7px">
+    <div style="position:absolute;top:0;left:0;right:0;height:44px;background:rgba(17,18,20,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;z-index:10;gap:14px;">
+      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);">Live Preview</span>
+      <span id="dimReadout" style="font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;font-weight:500;"></span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:7px;">
         <span class="sdot" id="renderDot"></span>
-        <span id="renderStatus" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">Waiting for input</span>
+        <span id="renderStatus" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;">Waiting for input</span>
       </div>
     </div>
 
-    <!-- canvas mount -->
-    <div id="viewer" style="position:absolute;inset:44px 0 0 0"></div>
+    <!-- Three.js mount -->
+    <div id="viewer" style="position:absolute;inset:44px 0 0 0;"></div>
 
-    <!-- placeholder -->
-    <div id="placeholder" style="top:44px">
-      <div style="text-align:center;opacity:.18">
-        <div style="font-size:80px;margin-bottom:14px;line-height:1">⬡</div>
-        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">No Preview Yet</div>
-        <div style="font-size:11px;margin-top:8px;color:var(--muted)">Enter dimensions &amp; click Generate</div>
+    <!-- Placeholder -->
+    <div id="placeholder" style="top:44px;">
+      <div style="text-align:center;opacity:.18;">
+        <div style="font-size:80px;margin-bottom:14px;line-height:1;">⬡</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">No Preview Yet</div>
+        <div style="font-size:11px;margin-top:8px;color:var(--muted);">Enter dimensions &amp; click Generate</div>
       </div>
     </div>
 
   </div>
-</div>
 
+</div><!-- /app -->
+
+<!-- ════════════ SCRIPTS ════════════ -->
 <script>
 'use strict'
+
+/* ── Unit system ─────────────────────────────────────
+   All internal values are stored in mm.
+   toMM() converts user input → mm
+   fmtReadout() builds the dimension string for top bar
+──────────────────────────────────────────────────── */
+let currentUnit = 'mm'
+
+const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 }
+const PLACEHOLDERS = {
+  mm: ['300', '200', '150'],
+  cm: ['30', '20', '15'],
+  in: ['11.8', '7.9', '5.9']
+}
+const UNIT_LABEL = { mm: 'mm', cm: 'cm', in: 'in' }
+
+function selectUnit(unit) {
+  currentUnit = unit
+  // update pills
+  document.querySelectorAll('.unit-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.unit === unit)
+  })
+  // update placeholders
+  const [lp, wp, hp] = PLACEHOLDERS[unit]
+  document.getElementById('length').placeholder = lp
+  document.getElementById('width').placeholder  = wp
+  document.getElementById('height').placeholder = hp
+  // update badge label
+  updateConvHint()
+}
+
+function toMM(val) {
+  return val * UNIT_TO_MM[currentUnit]
+}
+
+function updateConvHint() {
+  const L = parseFloat(document.getElementById('length').value)
+  const W = parseFloat(document.getElementById('width').value)
+  const H = parseFloat(document.getElementById('height').value)
+  const hint = document.getElementById('convHint')
+  if (!L && !W && !H) { hint.textContent = ''; return }
+  if (currentUnit === 'mm') { hint.textContent = ''; return }
+  const lmm = isNaN(L) ? '—' : toMM(L).toFixed(1)
+  const wmm = isNaN(W) ? '—' : toMM(W).toFixed(1)
+  const hmm = isNaN(H) ? '—' : toMM(H).toFixed(1)
+  hint.textContent = `≈ ${lmm} × ${wmm} × ${hmm} mm`
+}
+
+// live hint on input change
+;['length','width','height'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateConvHint)
+})
+
+/* ── Three.js state ── */
 let scene, camera, renderer, controls, boxGroup
 let isReady = false
 
@@ -287,15 +392,15 @@ function initThree() {
   const W = container.clientWidth
   const H = container.clientHeight
 
-  scene    = new THREE.Scene()
-  camera   = new THREE.PerspectiveCamera(50, W/H, 0.01, 2000)
+  scene  = new THREE.Scene()
+  camera = new THREE.PerspectiveCamera(50, W/H, 0.01, 2000)
   camera.position.set(6, 5, 8)
 
-  renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true })
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(W, H)
   renderer.setClearColor(0x000000, 0)
-  document.getElementById('viewer').appendChild(renderer.domElement)
+  container.appendChild(renderer.domElement)
 
   controls = new THREE.OrbitControls(camera, renderer.domElement)
   controls.enableDamping  = true
@@ -310,11 +415,11 @@ function initThree() {
   window.addEventListener('resize', () => {
     const w = container.clientWidth, h = container.clientHeight
     camera.aspect = w/h; camera.updateProjectionMatrix()
-    renderer.setSize(w,h)
+    renderer.setSize(w, h)
   })
 
   isReady = true
-  ;(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera) })()
+  ;(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera) })()
 }
 
 /* ── Read file → THREE.Texture ── */
@@ -328,63 +433,73 @@ function readTexture(id) {
   })
 }
 
-/* ── Build box ── */
+/* ── Build box geometry ── */
 function buildBox(L, W, H, fx) {
   if (boxGroup) { scene.remove(boxGroup); boxGroup = null }
   boxGroup = new THREE.Group()
 
   function mat(key) {
     return new THREE.MeshStandardMaterial({
-      map: fx[key]||null, color: fx[key]?0xffffff:0x333540,
-      side:THREE.DoubleSide, roughness:0.6, metalness:0.04
+      map: fx[key] || null,
+      color: fx[key] ? 0xffffff : 0x333540,
+      side: THREE.DoubleSide, roughness: 0.6, metalness: 0.04
     })
   }
 
+  function addFace(geo, m, px,py,pz, rx,ry,rz) {
+    const mesh = new THREE.Mesh(geo, m)
+    mesh.position.set(px,py,pz)
+    mesh.rotation.set(rx||0, ry||0, rz||0)
+    boxGroup.add(mesh)
+  }
+
   // Front (+Z)
-  addFace(new THREE.PlaneGeometry(L,H), mat('frontImg'),  0,0,  W/2,  0,0,0)
+  addFace(new THREE.PlaneGeometry(L,H), mat('frontImg'),   0,   0,  W/2,  0, 0, 0)
   // Back  (-Z)
-  addFace(new THREE.PlaneGeometry(L,H), mat('backImg'),   0,0, -W/2,  0,Math.PI,0)
+  addFace(new THREE.PlaneGeometry(L,H), mat('backImg'),    0,   0, -W/2,  0, Math.PI, 0)
   // Bottom
-  addFace(new THREE.PlaneGeometry(L,W), mat('bottomImg'), 0,-H/2,0, -Math.PI/2,0,0)
+  addFace(new THREE.PlaneGeometry(L,W), mat('bottomImg'),  0, -H/2,  0,  -Math.PI/2, 0, 0)
   // Top front flap
-  addFace(new THREE.PlaneGeometry(L,W/2), mat('topFrontImg'), 0,H/2,W/4, -Math.PI/2,0,0)
+  addFace(new THREE.PlaneGeometry(L, W/2), mat('topFrontImg'), 0, H/2,  W/4, -Math.PI/2, 0, 0)
   // Top back flap
-  const tb = new THREE.Mesh(new THREE.PlaneGeometry(L,W/2), mat('topBackImg'))
-  tb.position.set(0,H/2,-W/4); tb.rotation.x=-Math.PI/2; tb.rotation.z=Math.PI; boxGroup.add(tb)
-  // Right (+X) — mirrors correctly
+  const tb = new THREE.Mesh(new THREE.PlaneGeometry(L, W/2), mat('topBackImg'))
+  tb.position.set(0, H/2, -W/4); tb.rotation.x = -Math.PI/2; tb.rotation.z = Math.PI
+  boxGroup.add(tb)
+  // Right (+X)
   const rm = new THREE.Mesh(new THREE.PlaneGeometry(W,H), mat('rightImg'))
-  rm.rotation.y = -Math.PI/2; rm.rotateY(Math.PI); rm.position.set(L/2,0,0); boxGroup.add(rm)
+  rm.rotation.y = -Math.PI/2; rm.rotateY(Math.PI); rm.position.set(L/2,0,0)
+  boxGroup.add(rm)
   // Left (-X)
   const lm = new THREE.Mesh(new THREE.PlaneGeometry(W,H), mat('leftImg'))
-  lm.rotation.y = Math.PI/2; lm.rotateY(Math.PI); lm.position.set(-L/2,0,0); boxGroup.add(lm)
-  // Wireframe
+  lm.rotation.y =  Math.PI/2; lm.rotateY(Math.PI); lm.position.set(-L/2,0,0)
+  boxGroup.add(lm)
+  // Wireframe edges
   boxGroup.add(new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(L,H,W)),
-    new THREE.LineBasicMaterial({color:0x555666})
+    new THREE.LineBasicMaterial({ color: 0x555666 })
   ))
 
   scene.add(boxGroup)
 }
 
-function addFace(geo, mat, px,py,pz, rx,ry,rz) {
-  const m = new THREE.Mesh(geo, mat)
-  m.position.set(px,py,pz); m.rotation.set(rx,ry,rz)
-  boxGroup.add(m)
-}
-
-/* ── GENERATE ── */
+/* ── GENERATE PREVIEW ── */
 async function generatePreview() {
-  const L = parseFloat(document.getElementById('length').value)
-  const W = parseFloat(document.getElementById('width').value)
-  const H = parseFloat(document.getElementById('height').value)
+  const rawL = parseFloat(document.getElementById('length').value)
+  const rawW = parseFloat(document.getElementById('width').value)
+  const rawH = parseFloat(document.getElementById('height').value)
 
-  if (!L||!W||!H||L<=0||W<=0||H<=0) {
+  if (!rawL || !rawW || !rawH || rawL <= 0 || rawW <= 0 || rawH <= 0) {
     ;['length','width','height'].forEach(id => {
       document.getElementById(id).classList.add('error')
-      setTimeout(()=>document.getElementById(id).classList.remove('error'), 1400)
+      setTimeout(() => document.getElementById(id).classList.remove('error'), 1400)
     })
     return
   }
+
+  // Convert to mm
+  const Lmm = toMM(rawL)
+  const Wmm = toMM(rawW)
+  const Hmm = toMM(rawH)
 
   setDot('renderDot','#e8ff47'); setTxt('Building…')
   if (!isReady) initThree()
@@ -394,13 +509,16 @@ async function generatePreview() {
   const fx = {}
   await Promise.all(faceIds.map(async id => { fx[id] = await readTexture(id) }))
 
-  buildBox(L/10, W/10, H/10, fx)
+  // Scale to Three.js units (1 unit = 10mm)
+  buildBox(Lmm/10, Wmm/10, Hmm/10, fx)
 
-  const maxD = Math.max(L,W,H)/10
+  const maxD = Math.max(Lmm, Wmm, Hmm) / 10
   camera.position.set(maxD*1.7, maxD*1.3, maxD*2.1)
   controls.target.set(0,0,0); controls.update()
 
-  document.getElementById('dimReadout').textContent = `${L} × ${W} × ${H} mm`
+  // Readout with selected unit
+  const ul = UNIT_LABEL[currentUnit]
+  document.getElementById('dimReadout').textContent = `${rawL} × ${rawW} × ${rawH} ${ul}`
   setDot('statusDot','#3ddc84'); setDot('renderDot','#3ddc84'); setTxt('Preview ready')
   document.getElementById('exportGlb').disabled  = false
   document.getElementById('exportUsdz').disabled = false
@@ -416,31 +534,24 @@ function exportGLB() {
   if (!boxGroup) return
   new THREE.GLTFExporter().parse(boxGroup, result => {
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([result],{type:'model/gltf-binary'}))
+    a.href = URL.createObjectURL(new Blob([result], { type: 'model/gltf-binary' }))
     a.download = 'box-model.glb'; a.click()
-  },{binary:true})
+  }, { binary: true })
 }
 
-/* ══════════════════════════════════════════════════
-   USDZ EXPORT — valid for iPhone AR QuickLook
-   Strategy:
-   1. Export GLB binary via GLTFExporter
-   2. Rename it model.glb inside the zip
-   3. Write a minimal box.usda that references the GLB
-   4. Pack both into a .usdz (ZIP, store/no-compress)
-   Apple QuickLook accepts a USDZ that contains a
-   single .usda referencing a .glb (or just a .glb
-   renamed to .usdz which many apps accept).
-   We use the simplest guaranteed approach:
-   a single .usda geometry file packed uncompressed.
-══════════════════════════════════════════════════ */
+/* ── EXPORT USDZ (iPhone AR QuickLook) ──────────────
+   Builds a valid .usdz:
+   - Collects all mesh triangles + transforms
+   - Writes proper USDA ASCII
+   - Packs as uncompressed ZIP (Apple requirement)
+──────────────────────────────────────────────────── */
 function exportUSDZ() {
   if (!boxGroup) return
   setDot('renderDot','#e8ff47'); setTxt('Building USDZ…')
 
-  // Step 1: collect all triangles from mesh children
-  const allPos=[], allNor=[], allUV=[], faceVtxCounts=[], faceVtxIndices=[]
-  let base=0
+  const allPos=[], allNor=[], allUV=[]
+  const faceVtxCounts=[], faceVtxIndices=[]
+  let base = 0
 
   boxGroup.traverse(obj => {
     if (!obj.isMesh) return
@@ -452,19 +563,19 @@ function exportUSDZ() {
     const uv  = geo.attributes.uv
     const idx = geo.index
 
-    for(let i=0;i<pos.count;i++){
-      allPos.push(`(${pos.getX(i).toFixed(5)}, ${pos.getY(i).toFixed(5)}, ${pos.getZ(i).toFixed(5)})`)
-      if(nor) allNor.push(`(${nor.getX(i).toFixed(5)}, ${nor.getY(i).toFixed(5)}, ${nor.getZ(i).toFixed(5)})`)
-      if(uv)  allUV.push(`(${uv.getX(i).toFixed(5)}, ${(1-uv.getY(i)).toFixed(5)})`)
+    for (let i = 0; i < pos.count; i++) {
+      allPos.push(`(${pos.getX(i).toFixed(5)},${pos.getY(i).toFixed(5)},${pos.getZ(i).toFixed(5)})`)
+      if (nor) allNor.push(`(${nor.getX(i).toFixed(5)},${nor.getY(i).toFixed(5)},${nor.getZ(i).toFixed(5)})`)
+      if (uv)  allUV.push(`(${uv.getX(i).toFixed(5)},${(1-uv.getY(i)).toFixed(5)})`)
     }
 
-    if(idx){
-      for(let i=0;i<idx.count;i+=3){
+    if (idx) {
+      for (let i = 0; i < idx.count; i += 3) {
         faceVtxCounts.push(3)
         faceVtxIndices.push(idx.getX(i)+base, idx.getY(i)+base, idx.getZ(i)+base)
       }
     } else {
-      for(let i=0;i<pos.count;i+=3){
+      for (let i = 0; i < pos.count; i += 3) {
         faceVtxCounts.push(3)
         faceVtxIndices.push(i+base, i+1+base, i+2+base)
       }
@@ -472,7 +583,6 @@ function exportUSDZ() {
     base += pos.count
   })
 
-  // Build USDA
   const usda = `#usda 1.0
 (
     defaultPrim = "BoxRoot"
@@ -487,29 +597,24 @@ def Xform "BoxRoot" (
     def Mesh "BoxMesh"
     {
         float3[] points = [${allPos.join(',')}]
-        int[]    faceVertexCounts   = [${faceVtxCounts.join(',')}]
-        int[]    faceVertexIndices  = [${faceVtxIndices.join(',')}]
+        int[] faceVertexCounts = [${faceVtxCounts.join(',')}]
+        int[] faceVertexIndices = [${faceVtxIndices.join(',')}]
         ${allNor.length ? `normal3f[] normals = [${allNor.join(',')}] (\n            interpolation = "faceVarying"\n        )` : ''}
         ${allUV.length  ? `texCoord2f[] primvars:st = [${allUV.join(',')}] (\n            interpolation = "faceVarying"\n        )` : ''}
         uniform token subdivisionScheme = "none"
         uniform token orientation = "rightHanded"
-
-        double3 xformOp:translate = (0, 0, 0)
-        float3  xformOp:scale     = (1, 1, 1)
-        uniform token[] xformOpOrder = ["xformOp:translate","xformOp:scale"]
     }
 }
 `
 
-  // Pack into .usdz (ZIP uncompressed — required by Apple)
   const encoded = new TextEncoder().encode(usda)
   fflate.zip(
-    { 'box-model.usda': [encoded, { level:0 }] },
-    { level:0 },
+    { 'box-model.usda': [encoded, { level: 0 }] },
+    { level: 0 },
     (err, zipped) => {
-      if(err){ alert('USDZ build failed: '+err.message); return }
+      if (err) { alert('USDZ build failed: ' + err.message); return }
       const a = document.createElement('a')
-      a.href = URL.createObjectURL(new Blob([zipped],{type:'model/vnd.usdz+zip'}))
+      a.href = URL.createObjectURL(new Blob([zipped], { type: 'model/vnd.usdz+zip' }))
       a.download = 'box-model.usdz'
       document.body.appendChild(a); a.click(); document.body.removeChild(a)
       setDot('renderDot','#3ddc84'); setTxt('USDZ exported ✓')
