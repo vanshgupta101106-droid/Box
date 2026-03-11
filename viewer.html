@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+<style>
+body{
+margin:0;
+background:black;
+}
+
+model-viewer{
+width:100vw;
+height:100vh;
+}
+</style>
+
+</head>
+
+<body>
+
+<input type="file" id="file">
+
+<model-viewer id="viewer" camera-controls auto-rotate></model-viewer>
+
+<script>
+
+document.getElementById("file").addEventListener("change",function(e){
+
+const file = e.target.files[0]
+
+if(file){
+
+const url = URL.createObjectURL(file)
+
+document.getElementById("viewer").src = url
+
+}
+
+})
+
+</script>
+
+</body>
+</html>

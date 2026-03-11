@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Panel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="controls">
+
+<h2>Admin Panel</h2>
+
+<label>Length</label>
+<input type="number" id="length">
+
+<label>Width</label>
+<input type="number" id="width">
+
+<label>Height</label>
+<input type="number" id="height">
+
+<h3>Upload Designs</h3>
+
+<label>Right</label>
+<input type="file" id="rightImg">
+
+<label>Left</label>
+<input type="file" id="leftImg">
+
+<label>Top Front</label>
+<input type="file" id="topFrontImg">
+
+<label>Top Back</label>
+<input type="file" id="topBackImg">
+
+<label>Bottom</label>
+<input type="file" id="bottomImg">
+
+<label>Front</label>
+<input type="file" id="frontImg">
+
+<label>Back</label>
+<input type="file" id="backImg">
+
+<button onclick="generatePreview()">Generate Preview</button>
+
+</div>
+
+<script>
+
+function generatePreview(){
+
+const length=document.getElementById("length").value
+const width=document.getElementById("width").value
+const height=document.getElementById("height").value
+
+if(!length||!width||!height){
+alert("Enter dimensions")
+return
+}
+
+localStorage.setItem("length",length)
+localStorage.setItem("width",width)
+localStorage.setItem("height",height)
+
+const ids=[
+"rightImg",
+"leftImg",
+"topFrontImg",
+"topBackImg",
+"bottomImg",
+"frontImg",
+"backImg"
+]
+
+ids.forEach(id=>{
+
+const file=document.getElementById(id).files[0]
+
+if(file){
+
+const reader=new FileReader()
+
+reader.onload=function(e){
+localStorage.setItem(id,e.target.result)
+}
+
+reader.readAsDataURL(file)
+
+}
+
+})
+
+setTimeout(()=>{
+
+window.open("preview.html","_blank")
+
+},500)
+
+}
+
+</script>
+
+</body>
+</html>

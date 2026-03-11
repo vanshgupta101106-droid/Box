@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>3D Box Preview</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{margin:0;background:black}
+#downloadBtn{
+position:absolute;
+top:20px;
+right:20px;
+padding:10px 20px;
+z-index:10;
+}
+</style>
+</head>
+
+<body>
+
+<button onclick="downloadModels()">Download 3D Files</button>
+<div id="viewer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/USDZExporter.js"></script>
+
+<script>
+
+let scene,camera,renderer,controls
+let boxGroup
+
+const length=parseFloat(localStorage.getItem("length"))
+const width=parseFloat(localStorage.getItem("width"))
+const height=parseFloat(localStorage.getItem("height"))
+
+init()
+
+function init(){
+
+scene=new THREE.Scene()
+
+camera=new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+)
+
+camera.position.set(4,4,6)
+
+renderer=new THREE.WebGLRenderer({antialias:true})
+renderer.setSize(window.innerWidth,window.innerHeight)
+
+document.getElementById("viewer").appendChild(renderer.domElement)
+
+controls=new THREE.OrbitControls(camera,renderer.domElement)
+controls.enableDamping=true
+
+const light=new THREE.DirectionalLight(0xffffff,1)
+light.position.set(5,5,5)
+
+scene.add(light)
+scene.add(new THREE.AmbientLight(0xffffff,0.6))
+
+createBox()
+
+animate()
+
+}
+
+function loadTexture(name){
+
+const data=localStorage.getItem(name)
+if(!data) return null
+
+return new THREE.TextureLoader().load(data)
+
+}
+
+function createBox(){
+
+boxGroup=new THREE.Group()
+scene.add(boxGroup)
+
+const L=length/10
+const W=width/10
+const H=height/10
+
+const frontTex=loadTexture("frontImg")
+const backTex=loadTexture("backImg")
+const leftTex=loadTexture("leftImg")
+const rightTex=loadTexture("rightImg")
+const bottomTex=loadTexture("bottomImg")
+
+const topFrontTex=loadTexture("topFrontImg")
+const topBackTex=loadTexture("topBackImg")
+
+// FRONT
+const front=new THREE.Mesh(
+new THREE.PlaneGeometry(L,H),
+new THREE.MeshStandardMaterial({map:frontTex,side:THREE.DoubleSide})
+)
+front.position.set(0,0,W/2)
+boxGroup.add(front)
+
+// BACK
+const back=new THREE.Mesh(
+new THREE.PlaneGeometry(L,H),
+new THREE.MeshStandardMaterial({map:backTex,side:THREE.DoubleSide})
+)
+back.rotation.y=Math.PI
+back.position.set(0,0,-W/2)
+boxGroup.add(back)
+
+// RIGHT
+const right = new THREE.Mesh(
+    new THREE.PlaneGeometry(W, H),
+    new THREE.MeshStandardMaterial({
+        map: rightTex,
+        side: THREE.DoubleSide
+    })
+);
+
+right.rotation.y = -Math.PI / 2;
+right.rotateY(Math.PI);   // mirror correctly
+
+right.position.set(L/2,0,0);
+
+boxGroup.add(right);
+
+// LEFT
+const left = new THREE.Mesh(
+    new THREE.PlaneGeometry(W, H),
+    new THREE.MeshStandardMaterial({
+        map: leftTex,
+        side: THREE.DoubleSide
+    })
+);
+
+left.rotation.y = Math.PI / 2;
+left.rotateY(Math.PI);   // mirror correctly
+
+left.position.set(-L/2,0,0);
+
+boxGroup.add(left);
+
+// BOTTOM
+const bottom=new THREE.Mesh(
+new THREE.PlaneGeometry(L,W),
+new THREE.MeshStandardMaterial({map:bottomTex,side:THREE.DoubleSide})
+)
+bottom.rotation.x=-Math.PI/2
+bottom.position.set(0,-H/2,0)
+boxGroup.add(bottom)
+
+// TOP FRONT
+const topFront=new THREE.Mesh(
+new THREE.PlaneGeometry(L,W/2),
+new THREE.MeshStandardMaterial({map:topFrontTex,side:THREE.DoubleSide})
+)
+topFront.rotation.x=-Math.PI/2
+topFront.position.set(0,H/2,W/4)
+boxGroup.add(topFront)
+
+// TOP BACK
+const topBack=new THREE.Mesh(
+new THREE.PlaneGeometry(L,W/2),
+new THREE.MeshStandardMaterial({map:topBackTex,side:THREE.DoubleSide})
+)
+topBack.rotation.x=-Math.PI/2
+topBack.rotation.z=Math.PI
+topBack.position.set(0,H/2,-W/4)
+boxGroup.add(topBack)
+
+}
+
+function downloadModels(){
+
+// GLB EXPORT
+const glbExporter = new THREE.GLTFExporter()
+
+glbExporter.parse(boxGroup,function(result){
+
+const blob = new Blob([result],{type:"model/gltf-binary"})
+
+const link = document.createElement("a")
+
+link.href = URL.createObjectURL(blob)
+link.download = "box-model.glb"
+
+link.click()
+
+},{binary:true})
+
+
+// USDZ EXPORT
+const usdzExporter = new THREE.USDZExporter()
+
+const arraybuffer = usdzExporter.parse(boxGroup)
+
+const blob2 = new Blob([arraybuffer],{type:'model/vnd.usdz+zip'})
+
+const link2 = document.createElement("a")
+
+link2.href = URL.createObjectURL(blob2)
+link2.download = "box-model.usdz"
+
+link2.click()
+
+}
+
+function animate(){
+requestAnimationFrame(animate)
+controls.update()
+renderer.render(scene,camera)
+}
+
+// DOWNLOAD
+document.getElementById("downloadBtn").onclick=function(){
+
+const exporter=new THREE.GLTFExporter()
+
+exporter.parse(
+boxGroup,
+function(result){
+
+const blob=new Blob([result],{type:"model/gltf-binary"})
+
+const link=document.createElement("a")
+link.href=URL.createObjectURL(blob)
+link.download="box-model.glb"
+link.click()
+
+},
+{binary:true}
+)
+
+}
+
+</script>
+</body>
+</html>
