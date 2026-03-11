@@ -25,8 +25,13 @@ body {
   background: var(--surface);
   color: var(--text);
   font-family: 'DM Mono', monospace;
-  height: 100vh;
-  overflow: hidden;
+  /* mobile: natural scroll; desktop overridden below */
+}
+
+/* Desktop only: lock to viewport */
+@media (min-width: 769px) {
+  body { height: 100vh; overflow: hidden; }
+  #app { height: 100vh; }
 }
 
 /* scrollbar */
@@ -146,14 +151,62 @@ body {
 #viewer canvas { display: block; }
 .dim-row { display: flex; gap: 10px; }
 .exp-row { display: flex; gap: 8px; }
+
+/* ══ MOBILE RESPONSIVE ══ */
+@media (max-width: 768px) {
+  body {
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  #app {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+  #left-panel {
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    overflow-y: visible !important;
+    padding: 18px 14px !important;
+    flex-shrink: 0 !important;
+  }
+  #right-panel {
+    width: 100% !important;
+    height: 75vw !important;
+    min-height: 260px !important;
+    max-height: 420px !important;
+    flex-shrink: 0 !important;
+  }
+  .dim-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .dim-row > div { width: 100% !important; }
+  .exp-row { flex-direction: column !important; gap: 8px !important; }
+  .btn-exp { width: 100% !important; }
+  /* unit toggle: stretch full width on mobile */
+  #unitToggle { width: 100% !important; }
+  /* badge + unit toggle stack vertically on small screens */
+  .dim-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .unit-toggle { width: 100% !important; }
+  .unit-pill { padding: 8px 4px !important; font-size: 12px !important; }
+}
 </style>
 </head>
 <body>
 
-<div id="app" style="display:flex;height:100vh;">
+<div id="app" style="display:flex;width:100%;">
 
   <!-- ══════════ LEFT PANEL ══════════ -->
-  <div id="left-panel" style="width:320px;min-width:320px;background:var(--panel);border-right:1px solid var(--border);padding:22px 18px;display:flex;flex-direction:column;gap:0;">
+  <div id="left-panel" style="width:320px;min-width:320px;background:var(--panel);border-right:1px solid var(--border);padding:22px 18px;display:flex;flex-direction:column;gap:0;flex-shrink:0;">
 
     <!-- Header -->
     <div style="margin-bottom:18px;">
@@ -170,7 +223,7 @@ body {
     <div style="margin-bottom:14px;">
 
       <!-- badge + unit toggle in same row -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="dim-header-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div class="sec-badge" style="margin-bottom:0;">📐 Dimensions</div>
         <!-- Unit selector pills -->
         <div class="unit-toggle" id="unitToggle">
@@ -289,7 +342,7 @@ body {
   </div><!-- /left-panel -->
 
   <!-- ══════════ RIGHT VIEWER ══════════ -->
-  <div id="right-panel" style="flex:1;position:relative;background:var(--surface);min-height:300px;" class="grid-bg">
+  <div id="right-panel" style="flex:1;position:relative;background:var(--surface);" class="grid-bg">
 
     <!-- top bar -->
     <div style="position:absolute;top:0;left:0;right:0;height:44px;background:rgba(17,18,20,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;z-index:10;gap:14px;">
@@ -522,6 +575,11 @@ async function generatePreview() {
   setDot('statusDot','#3ddc84'); setDot('renderDot','#3ddc84'); setTxt('Preview ready')
   document.getElementById('exportGlb').disabled  = false
   document.getElementById('exportUsdz').disabled = false
+
+  // On mobile scroll viewer into view
+  if (window.innerWidth <= 768) {
+    document.getElementById('right-panel').scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
 
 function setDot(id, col) {
