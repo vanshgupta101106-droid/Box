@@ -1,0 +1,10 @@
+{
+  "name": "box-studio",
+  "version": "1.0.0",
+  "description": "3D Box AR Preview and Export",
+  "scripts": {
+    "build": "echo 'Frontend only build'",
+    "dev": "vercel dev"
+  }
+}
+
