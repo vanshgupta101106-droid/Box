@@ -312,7 +312,7 @@ async function exportUSDZ() {
     
     const blob = new Blob([arraybuffer], { type: 'model/vnd.usdz+zip' });
 
-    // Send to server for proper MIME type handling
+    // Send to Vercel API for proper MIME type handling
     try {
       const uploadResponse = await fetch('/api/usdz', {
         method: 'POST',
@@ -326,37 +326,42 @@ async function exportUSDZ() {
         const { downloadUrl } = await uploadResponse.json();
         setTxt('Opening in AR…');
         
-        // Use the download URL provided by the server
-        // This URL includes the USDZ data and will be served with proper MIME type
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = 'box-model.usdz';
-        link.style.display = 'none';
+        // iOS: Use rel="ar" anchor - most reliable way to trigger AR Quick Look
+        const arLink = document.createElement('a');
+        arLink.rel = 'ar';
+        arLink.href = downloadUrl;
+        arLink.download = 'box-model.usdz';
+        arLink.style.display = 'none';
         
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        document.body.appendChild(arLink);
+        arLink.click();
+        
+        setTimeout(() => {
+          if (document.body.contains(arLink)) {
+            document.body.removeChild(arLink);
+          }
+        }, 500);
         
         setTxt('AR View ready ✓');
       } else {
         throw new Error('Server processing failed');
       }
     } catch (err) {
-      // Fallback: If server not available, use blob URL (less reliable on iOS)
-      console.warn('Server upload failed, falling back to blob URL:', err);
+      // Fallback: Direct blob URL
+      console.warn('API failed, trying direct blob URL:', err);
       
       const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'box-model.usdz';
-      link.style.display = 'none';
+      const arLink = document.createElement('a');
+      arLink.rel = 'ar';
+      arLink.href = blobUrl;
+      arLink.download = 'box-model.usdz';
+      arLink.style.display = 'none';
       
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      document.body.appendChild(arLink);
+      arLink.click();
+      document.body.removeChild(arLink);
       
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-      setTxt('USDZ exported ✓');
+      setTxt('AR View launching ✓');
     }
   } catch (err) {
     console.error('USDZ Export Error:', err);
