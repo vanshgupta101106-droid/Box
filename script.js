@@ -323,13 +323,13 @@ async function exportUSDZ() {
       });
 
       if (uploadResponse.ok) {
-        const { id } = await uploadResponse.json();
+        const { downloadUrl } = await uploadResponse.json();
         setTxt('Opening in AR…');
         
-        // Download from server endpoint (with proper MIME type headers)
-        // This will trigger AR Quick Look on iOS automatically
+        // Use the download URL provided by the server
+        // This URL includes the USDZ data and will be served with proper MIME type
         const link = document.createElement('a');
-        link.href = `/api/usdz?id=${id}`;
+        link.href = downloadUrl;
         link.download = 'box-model.usdz';
         link.style.display = 'none';
         
@@ -339,7 +339,7 @@ async function exportUSDZ() {
         
         setTxt('AR View ready ✓');
       } else {
-        throw new Error('Server upload failed');
+        throw new Error('Server processing failed');
       }
     } catch (err) {
       // Fallback: If server not available, use blob URL (less reliable on iOS)
