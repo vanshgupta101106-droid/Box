@@ -300,25 +300,7 @@ async function buildUSDZFile() {
 
   const exporter = new USDZExporter();
   const arraybuffer = await exporter.parse(exportGroup);
-
-  // Fix for iOS AR Quick Look: Re-order files in ZIP so model.usda is first
-  try {
-    const files = fflate.unzipSync(new Uint8Array(arraybuffer));
-    const orderedFiles = {};
-    if (files['model.usda']) {
-      orderedFiles['model.usda'] = files['model.usda'];
-    }
-    for (const key in files) {
-      if (key !== 'model.usda') {
-        orderedFiles[key] = files[key];
-      }
-    }
-    const usdzip = fflate.zipSync(orderedFiles, { level: 0 });
-    return new File([usdzip.buffer], 'box-model.usdz', { type: 'model/vnd.usdz+zip' });
-  } catch (err) {
-    console.error('Failed to re-order USDZ zip files:', err);
-    return new File([arraybuffer], 'box-model.usdz', { type: 'model/vnd.usdz+zip' });
-  }
+  return new File([arraybuffer], 'box-model.usdz', { type: 'model/vnd.usdz+zip' });
 }
 
 async function prepareUSDZ() {
