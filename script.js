@@ -299,7 +299,7 @@ async function buildUSDZFile() {
   if (!exportGroup) return null;
 
   const exporter = new USDZExporter();
-  const arraybuffer = await exporter.parse(exportGroup);
+  const arraybuffer = await exporter.parse(exportGroup, { quickLookCompatible: true });
   return new File([arraybuffer], 'box-model.usdz', { type: 'model/vnd.usdz+zip' });
 }
 
