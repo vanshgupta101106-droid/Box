@@ -15,6 +15,8 @@ const UNIT_LABEL = { mm: 'mm', cm: 'cm', in: 'in' };
 
 let scene, camera, renderer, controls, boxGroup;
 let isReady = false;
+let usdzBlobUrl = null;
+let usdzFile = null;
 
 function selectUnit(unit) {
   currentUnit = unit;
@@ -207,6 +209,8 @@ async function generatePreview() {
     return;
   }
 
+  disableExportButtons();
+
   const Lmm = toMM(rawL);
   const Wmm = toMM(rawW);
   const Hmm = toMM(rawH);
@@ -238,9 +242,6 @@ async function generatePreview() {
   setDot('renderDot', '#00f2fe');
   setTxt('Preview ready');
 
-  document.getElementById('exportGlb').disabled = false;
-  document.getElementById('exportUsdz').disabled = false;
-
   if (window.innerWidth <= 768) {
     document.getElementById('viewer-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
     
@@ -249,6 +250,8 @@ async function generatePreview() {
       document.getElementById('floatingArBtn').style.display = 'flex';
     }
   }
+
+  await prepareUSDZ();
 }
 
 function setDot(id, col) {
@@ -261,23 +264,29 @@ function setTxt(t) {
   if (el) el.textContent = t;
 }
 
-async function exportGLB() {
-  if (!boxGroup) return;
-  setTxt('Exporting GLB…');
-  
-  // Hide wireframe temporarily
-  const wireframe = boxGroup.getObjectByName("wireframe");
-  if (wireframe) wireframe.visible = false;
+function prepareExportGroup() {
+  if (!boxGroup) return null;
+  const exportGroup = boxGroup.clone();
+  const wireframe = exportGroup.getObjectByName('wireframe');
+  if (wireframe) exportGroup.remove(wireframe);
 
+  // Scale from cm (Three.js units) to meters for real-world AR scale (1 unit = 1cm = 0.01m)
+  exportGroup.scale.set(0.01, 0.01, 0.01);
+  exportGroup.updateMatrixWorld(true);
+  return exportGroup;
+}
+
+async function exportGLB() {
+  const exportGroup = prepareExportGroup();
+  if (!exportGroup) return;
+
+  setTxt('Exporting GLB…');
   const exporter = new GLTFExporter();
-  exporter.parse(boxGroup, (result) => {
-    if (wireframe) wireframe.visible = true;
-    
+  exporter.parse(exportGroup, (result) => {
     const blob = new Blob([result], { type: 'model/gltf-binary' });
     downloadFile(blob, 'box-model.glb');
     setTxt('GLB exported ✓');
   }, (err) => {
-    if (wireframe) wireframe.visible = true;
     console.error('GLB Export Error:', err);
     setTxt('GLB Export failed');
   }, { binary: true });
@@ -285,86 +294,79 @@ async function exportGLB() {
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-async function exportUSDZ() {
+async function buildUSDZFile() {
+  const exportGroup = prepareExportGroup();
+  if (!exportGroup) return null;
+
+  const exporter = new USDZExporter();
+  const arraybuffer = await exporter.parse(exportGroup);
+  return new File([arraybuffer], 'box-model.usdz', { type: 'model/vnd.usdz+zip' });
+}
+
+async function prepareUSDZ() {
   if (!boxGroup) return;
-  
+
   if (typeof fflate === 'undefined') {
-    alert('The zipping library (fflate) is still loading. Please wait a moment and try again.');
+    // Retry in 500ms if fflate is still loading
+    setTimeout(prepareUSDZ, 500);
     return;
   }
 
-  setTxt('Building USDZ…');
-  
+  setTxt('Building AR Model…');
   try {
-    // Clone the group for export to avoid flickering the main view
-    const exportGroup = boxGroup.clone();
-    
-    // Hide wireframe in the clone
-    const wireframe = exportGroup.getObjectByName("wireframe");
-    if (wireframe) exportGroup.remove(wireframe);
-
-    // Scale for AR (Converting our cm-based units to Meters for Apple AR)
-    // 1 unit = 10mm = 1cm. 1cm = 0.01m.
-    exportGroup.scale.set(0.01, 0.01, 0.01);
-
-    const exporter = new USDZExporter();
-    const arraybuffer = await exporter.parse(exportGroup);
-    
-    // CRITICAL: Correct MIME type for AR Quick Look
-    const blob = new Blob([arraybuffer], { type: 'model/vnd.usdz+zip' });
-    const blobUrl = URL.createObjectURL(blob);
-
-    setTxt('Opening in AR…');
-    
-    // iOS: Use rel="ar" for AR Quick Look
-    // Android: Will download as USDZ file
-    if (isIOS) {
-      // iOS AR Quick Look - using rel="ar" attribute
-      const arLink = document.createElement('a');
-      arLink.rel = 'ar';
-      arLink.href = blobUrl;
-      arLink.download = 'box-model.usdz';
-      arLink.style.display = 'none';
-      
-      document.body.appendChild(arLink);
-      arLink.click();
-      
-      // Cleanup after a delay
-      setTimeout(() => {
-        if (document.body.contains(arLink)) {
-          document.body.removeChild(arLink);
-        }
-        // Keep blob URL alive a bit longer for iOS
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      }, 500);
-      
-      setTxt('AR View ready ✓');
-    } else {
-      // Android and others: Regular download
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'box-model.usdz';
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Cleanup
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-      setTxt('USDZ exported ✓');
+    const file = await buildUSDZFile();
+    if (usdzBlobUrl) {
+      URL.revokeObjectURL(usdzBlobUrl);
     }
+    usdzFile = file;
+    usdzBlobUrl = URL.createObjectURL(file);
+
+    // Update native links
+    const usdzBtn = document.getElementById('exportUsdz');
+    if (usdzBtn) {
+      usdzBtn.href = usdzBlobUrl;
+    }
+    const floatBtn = document.getElementById('floatingArBtn');
+    if (floatBtn) {
+      floatBtn.href = usdzBlobUrl;
+    }
+
+    setTxt('AR Model ready ✓');
+    enableExportButtons();
   } catch (err) {
-    console.error('USDZ Export Error:', err);
-    alert('USDZ Export failed: ' + err.message);
-    setTxt('Export failed');
+    console.error('USDZ pre-generation error:', err);
+    setTxt('AR generation failed');
   }
 }
 
-// Update UI for iPhone
-if (isIOS) {
-  const usdzBtn = document.getElementById('exportUsdz');
-  if (usdzBtn) usdzBtn.textContent = 'View in AR (iPhone)';
+async function shareUSDZ() {
+  if (!usdzFile) return;
+
+  setTxt('Preparing USDZ for share…');
+
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [usdzFile] })) {
+      await navigator.share({
+        files: [usdzFile],
+        title: 'Box Studio USDZ',
+        text: 'Open this USDZ model in AR.'
+      });
+      setTxt('Shared via native share ✓');
+      return;
+    }
+  } catch (err) {
+    console.warn('USDZ Share Error, falling back to download:', err);
+    // Silent fallback if the user cancelled
+    if (err.name === 'AbortError') {
+      setTxt('Share cancelled');
+      return;
+    }
+  }
+
+  // Fallback to downloading the file if sharing is unsupported or fails
+  downloadFile(usdzFile, usdzFile.name);
+  setTxt('Share not supported; downloaded file');
+  alert('Direct file sharing is not supported by your browser/settings. The USDZ file has been downloaded instead so you can send it manually.');
 }
 
 function downloadFile(blob, filename) {
@@ -376,58 +378,108 @@ function downloadFile(blob, filename) {
   document.body.removeChild(link);
 }
 
-document.getElementById('generateBtn').addEventListener('click', generatePreview);
-document.getElementById('exportGlb').addEventListener('click', exportGLB);
-document.getElementById('exportUsdz').addEventListener('click', exportUSDZ);
-const floatingArBtn = document.getElementById('floatingArBtn');
-if (floatingArBtn) floatingArBtn.addEventListener('click', exportUSDZ);
+function enableExportButtons() {
+  ['exportGlb', 'exportUsdz', 'shareUsdz'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) {
+      console.warn(`enableExportButtons: button missing ${id}`);
+      return;
+    }
+    if (btn.tagName === 'A') {
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.removeAttribute('aria-disabled');
+    } else {
+      btn.disabled = false;
+      btn.removeAttribute('disabled');
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+  });
+}
+
+function disableExportButtons() {
+  ['exportGlb', 'exportUsdz', 'shareUsdz'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) {
+      console.warn(`disableExportButtons: button missing ${id}`);
+      return;
+    }
+    if (btn.tagName === 'A') {
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.3';
+      btn.style.cursor = 'not-allowed';
+      btn.setAttribute('aria-disabled', 'true');
+    } else {
+      btn.disabled = true;
+      btn.setAttribute('disabled', 'disabled');
+      btn.style.opacity = '0.3';
+      btn.style.cursor = 'not-allowed';
+    }
+  });
+}
+
+disableExportButtons();
+
+// Attach Event Listeners
+document.getElementById('generateBtn')?.addEventListener('click', generatePreview);
+document.getElementById('exportGlb')?.addEventListener('click', exportGLB);
+document.getElementById('shareUsdz')?.addEventListener('click', shareUSDZ);
+
+if (isIOS) {
+  const usdzBtn = document.getElementById('exportUsdz');
+  if (usdzBtn) usdzBtn.textContent = 'View in AR (iPhone)';
+}
 
 // Resizable Sidebar Logic
 const resizer = document.getElementById('resizer');
 const leftPanel = document.getElementById('left-panel');
 let isResizing = false;
 
-resizer.addEventListener('mousedown', (e) => {
-  isResizing = true;
-  resizer.classList.add('active');
-  document.body.style.cursor = 'col-resize';
-  document.body.style.userSelect = 'none';
-});
+if (resizer && leftPanel) {
+  resizer.addEventListener('mousedown', () => {
+    isResizing = true;
+    resizer.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
 
-window.addEventListener('mousemove', (e) => {
-  if (!isResizing) return;
-  const newWidth = e.clientX - 20; // accounting for margin
-  if (newWidth >= 280 && newWidth <= 600) {
-    leftPanel.style.width = `${newWidth}px`;
-    // Force Three.js to update
-    const container = document.getElementById('viewer');
-    if (renderer && camera) {
-      const w = container.clientWidth, h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+  window.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const newWidth = e.clientX - 20; // accounting for margin
+    if (newWidth >= 280 && newWidth <= 600) {
+      leftPanel.style.width = `${newWidth}px`;
+      // Force Three.js to update
+      const container = document.getElementById('viewer');
+      if (renderer && camera && container) {
+        const w = container.clientWidth, h = container.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
     }
-  }
-});
+  });
 
-window.addEventListener('mouseup', () => {
-  if (isResizing) {
-    isResizing = false;
-    resizer.classList.remove('active');
-    document.body.style.cursor = 'default';
-    document.body.style.userSelect = 'auto';
-  }
-});
+  window.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      resizer.classList.remove('active');
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    }
+  });
+}
 
 document.querySelectorAll('.unit-pill').forEach(btn => {
   btn.addEventListener('click', (e) => selectUnit(e.currentTarget.dataset.unit));
 });
 
 ['length', 'width', 'height'].forEach(id => {
-  document.getElementById(id).addEventListener('input', updateConvHint);
+  document.getElementById(id)?.addEventListener('input', updateConvHint);
 });
 
 const faceInputs = ['frontImg', 'backImg', 'leftImg', 'rightImg', 'bottomImg', 'topFrontImg', 'topBackImg', 'fullTopImg'];
 faceInputs.forEach(id => {
-  document.getElementById(id).addEventListener('change', (e) => markFile(e.target, 'drop-' + id));
+  document.getElementById(id)?.addEventListener('change', (e) => markFile(e.target, 'drop-' + id));
 });

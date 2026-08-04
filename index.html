@@ -182,8 +182,13 @@
           </div>
           <div class="exp-row">
             <button class="btn-exp" id="exportGlb" disabled>GLB Format</button>
-            <button class="btn-exp" id="exportUsdz" disabled>
+            <a class="btn-exp" id="exportUsdz" rel="ar" download="box-model.usdz" style="pointer-events: none; opacity: 0.3; cursor: not-allowed;" aria-disabled="true">
               USDZ (iOS AR)
+            </a>
+          </div>
+          <div class="exp-row" style="margin-top: 12px">
+            <button type="button" class="btn-exp" id="shareUsdz" disabled>
+              Share USDZ
             </button>
           </div>
         </div>
@@ -206,10 +211,10 @@
         <div id="viewer"></div>
 
         <!-- Floating AR Button for Mobile -->
-        <button id="floatingArBtn" class="ar-float-btn" style="display: none">
+        <a id="floatingArBtn" class="ar-float-btn" rel="ar" download="box-model.usdz" style="display: none; text-decoration: none;">
           <span class="ar-icon">📦</span>
           <span>View in AR</span>
-        </button>
+        </a>
 
         <div id="placeholder">
           <div class="placeholder-content">
